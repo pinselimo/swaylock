@@ -70,17 +70,22 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 		struct pool_buffer *buf, int32_t width, int32_t height,
 		uint32_t format) {
 	uint32_t stride = width * 4;
-	size_t size = stride * height;
+	size_t size_data = stride * height;
+    int32_t buffer_height = height;
+    if (height % 2) {
+        buffer_height += 1;
+    }
+	size_t size = stride * buffer_height;
 
 	void *data = NULL;
 	if (size > 0) {
 		char *name;
 		int fd = create_pool_file(size, &name);
 		assert(fd != -1);
-		data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		data = mmap(NULL, size_data, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 		struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
 		buf->buffer = wl_shm_pool_create_buffer(pool, 0,
-				width, height, stride, format);
+				width, buffer_height, stride, format);
 		wl_buffer_add_listener(buf->buffer, &buffer_listener, buf);
 		wl_shm_pool_destroy(pool);
 		close(fd);
